@@ -109,3 +109,28 @@
           (ok true))
         (ok false))))
 
+;; Function to update protocol admin
+(define-public (update-protocol-admin (new-admin principal))
+  (begin
+    (asserts! (is-eq tx-sender (var-get protocol-admin)) ERR_UNAUTHORIZED)
+    (asserts! (not (is-eq new-admin 'SP000000000000000000002Q6VF78)) ERR_INVALID_PRINCIPAL)
+    (print { event: "protocol-admin-updated", old-admin: (var-get protocol-admin), new-admin: new-admin })
+    (ok (var-set protocol-admin new-admin))))
+
+;; Function to get the current protection vault balance
+(define-read-only (get-vault-balance)
+  (ok (var-get protection-vault)))
+
+;; Function to check if a protocol is protected
+(define-read-only (is-protected (protocol principal))
+  (is-some (map-get? protected-protocols protocol)))
+
+;; Function to get the protected amount for a protocol
+(define-read-only (get-protected-amount (protocol principal))
+  (ok (default-to u0 (map-get? protected-protocols protocol))))
+
+;; Function to get the protection request status
+(define-read-only (get-protection-status (requester principal) (request-amount uint))
+  (match (map-get? protection-requests { requester: requester, amount: request-amount })
+    request-data (ok { status: (get status request-data), timestamp: (get timestamp request-data), disbursed-amount: (get disbursed-amount request-data) })
+    ERR_PROTECTION_REQUEST_NOT_FOUND))
